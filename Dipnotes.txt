@@ -1,0 +1,1 @@
+* databse.py ve 5_yangin_tespiti.py dosyaları güncellenmeli.
