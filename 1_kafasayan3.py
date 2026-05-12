@@ -68,13 +68,15 @@ class KafaSayaci:
         self.lock = threading.Lock()
         
         # Threadleri Başlat (Daemon=True: Ana program kapanınca bunlar da ölür)
-        # Threadlerin kısaca işlevi: bir thread videoyu okurken, diğer thread video'yu YOLO modeline sokar
+        # Threadlerin kısaca işlevi: bir thread videoyu okurken, 
+        # diğer thread video'yu yapay zeka ile analiz eder
         self.yolo_thread = threading.Thread(target=self.yolo_islem_dongusu)
         self.yolo_thread.daemon = True 
         self.yolo_thread.start()
         
         self.video_thread = threading.Thread(target=self.video_okuma_dongusu)
         self.video_thread.daemon = True
+
 
 # Burada başlatma fonksiyonu bulunmaktadır        
     def start(self):
