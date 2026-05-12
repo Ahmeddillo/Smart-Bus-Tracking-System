@@ -1,4 +1,4 @@
-#kafasayan3.py
+#kafasayan3.py   -- 12/05/2026
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -33,7 +33,7 @@ class KafaSayaci:
 
         self.cap = cv2.VideoCapture(video_dosyasi)
         
-        # Eğer kaynak açılmamışsa, kaynağın açılmadığı ifade edilir:
+        # Eğer kaynak açılmamışsa, kaynağın açılmadığı ifade edilir ve pencere için br boyut elde edilir:
         if not self.cap.isOpened():
             print(f"❌ Video kaynağı açılamadı: {video_dosyasi}")
             self.fps = 30
@@ -52,7 +52,7 @@ class KafaSayaci:
         self.display_width = 1280
         self.display_height = int(self.display_width * self.height / self.width) if self.width > 0 else 720
         
-        # --- DEĞİŞKENLER ---: initial parametreler sıfırlanır; kare, frame, son kutuların hepsi none
+        # Değişkenler: initial parametreler sıfırlanır; kare, frame, son kutuların hepsi none
         self.guncel_kare = None          
         self.output_frame = None         
         self.son_kutular = []            
@@ -70,6 +70,7 @@ class KafaSayaci:
         # Threadleri Başlat (Daemon=True: Ana program kapanınca bunlar da ölür)
         # Threadlerin kısaca işlevi: bir thread videoyu okurken, 
         # diğer thread video'yu yapay zeka ile analiz eder
+        # yani kısaca paralel işlemeyi sağlayan bir makenizma
         self.yolo_thread = threading.Thread(target=self.yolo_islem_dongusu)
         self.yolo_thread.daemon = True 
         self.yolo_thread.start()
@@ -91,6 +92,8 @@ class KafaSayaci:
         while self.program_calisiyor:
             islem_karesi = None
             with self.lock:
+                # önce işlem karesi alınır ve bir değişkene kopyalanır
+                # sonra o değişkenin üzerinde işlemler yürütülür zaten
                 if self.guncel_kare is not None and self.yeni_kare_var:
                     islem_karesi = self.guncel_kare.copy()
                     self.yeni_kare_var = False
