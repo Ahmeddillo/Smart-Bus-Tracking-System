@@ -1,0 +1,478 @@
+<!-- Index.cshtml -->
+@model OtobusDashboard.Models.OturumlarResponse
+@{
+    ViewData["Title"] = "Otobüs Dashboard";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Otobüs Yolcu & Sürücü Takip Sistemi</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            padding: 24px;
+        }
+
+        h1 {
+            color: #1e293b;
+            margin-bottom: 24px;
+            font-size: 22px;
+        }
+
+        .kart-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .kart-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .kart {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+            .kart h3 {
+                color: #94a3b8;
+                font-size: 12px;
+                letter-spacing: 1px;
+                margin-bottom: 12px;
+            }
+
+            .kart .sayi {
+                font-size: 42px;
+                font-weight: bold;
+            }
+
+            .kart .alt {
+                font-size: 12px;
+                color: #94a3b8;
+                margin-top: 8px;
+                font-weight: bold;
+            }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+
+            .panel h3 {
+                font-size: 15px;
+                color: #334155;
+                margin-bottom: 16px;
+                border-bottom: 1px solid #f1f5f9;
+                padding-bottom: 10px;
+            }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8fafc;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 12px;
+            color: #64748b;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        td {
+            padding: 10px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .badge-aktif {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-bitti {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚌 Otobüs Akıllı Takip Sistemi</h1>
+
+    <!-- SÜRÜCÜ PANELİ -->
+    <div class="panel">
+        <h3>👁️ Canlı Sürücü Analizi</h3>
+        <div class="kart-grid-4">
+            <div class="kart" id="surucu-durum-kart">
+                <h3>SÜRÜCÜ DURUMU</h3>
+                <div class="sayi" id="surucu-seviye" style="font-size:28px;">Bekleniyor</div>
+                <div class="alt" id="surucu-mesaj" style="color:#64748b;">Sistem bağlanıyor...</div>
+            </div>
+            <div class="kart">
+                <h3>GÖZ (EAR)</h3>
+                <div class="sayi" id="surucu-ear" style="color:#2563eb; font-size:36px;">--</div>
+                <div class="alt">Uyuklama Tespiti</div>
+            </div>
+            <div class="kart">
+                <h3>AĞIZ (MAR)</h3>
+                <div class="sayi" id="surucu-mar" style="color:#16a34a; font-size:36px;">--</div>
+                <div class="alt">Esneme Tespiti</div>
+            </div>
+            <div class="kart">
+                <h3>GÜNLÜK İHLAL</h3>
+                <div class="sayi" style="color:#dc2626; font-size:36px;">
+                    @(ViewBag.SurucuIstatistik?.ToplamUyari ?? 0)
+                </div>
+                <div class="alt">
+                    Kritik: @(ViewBag.SurucuIstatistik?.KritikSayisi ?? 0) | Dikkat: @(ViewBag.SurucuIstatistik?.DikkatSayisi ?? 0)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- YANGIN PANELİ -->
+    <div class="panel" id="yangin-panel" style="border: 2px solid transparent; transition: border 0.3s;">
+        <h3>🔥 Yangın Tespit Sistemi</h3>
+        <div class="kart-grid-4">
+            <div class="kart" id="yangin-durum-kart">
+                <h3>YANGIN DURUMU</h3>
+                <div class="sayi" id="yangin-durum" style="font-size:28px; color:#16a34a;">NORMAL</div>
+                <div class="alt" id="yangin-zaman">Sistem aktif</div>
+            </div>
+            <div class="kart">
+                <h3>GÜVEN SKORU</h3>
+                <div class="sayi" id="yangin-skor" style="color:#2563eb; font-size:36px;">--</div>
+                <div class="alt">AI Tespit Skoru</div>
+            </div>
+            <div class="kart">
+                <h3>TESPİT KUTUSU</h3>
+                <div class="sayi" id="yangin-kutu" style="color:#9333ea; font-size:36px;">0</div>
+                <div class="alt">Aktif bölge sayısı</div>
+            </div>
+            <div class="kart" id="yangin-alarm-kart">
+                <h3>ALARM</h3>
+                <div class="sayi" id="yangin-alarm" style="font-size:28px; color:#16a34a;">PASİF</div>
+                <div class="alt">Kritik eşik durumu</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- YANGIN GEÇMİŞ KAYITLAR -->
+    <div class="panel">
+        <h3>🔥 Yangın Geçmiş Kayıtlar</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Zaman</th>
+                    <th>Kamera</th>
+                    <th>Güven Skoru</th>
+                    <th>Kutu Sayısı</th>
+                    <th>Alarm</th>
+                </tr>
+            </thead>
+            <tbody id="yangin-tablo-body">
+                <tr><td colspan="5" style="text-align:center; color:#94a3b8;">Bekleniyor...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- KAYNAK SEÇİCİ -->
+    @if (ViewBag.Kaynaklar != null)
+    {
+        <div class="panel" style="margin-bottom:24px;">
+            <h3>🎥 Aktif Kamera / Video Kaynağı</h3>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;">
+                @foreach (var k in ViewBag.Kaynaklar.Kaynaklar)
+                {
+                    <form method="post" action="/Dashboard/KaynakSec">
+                        <input type="hidden" name="kaynakId" value="@k.Id" />
+                        <button type="submit"
+                                style="padding:10px 20px; border-radius:8px; border:2px solid @(k.Id == ViewBag.Kaynaklar.AktifId ? "#2563eb" : "#e2e8f0"); background:@(k.Id == ViewBag.Kaynaklar.AktifId ? "#eff6ff" : "white"); color:@(k.Id == ViewBag.Kaynaklar.AktifId ? "#2563eb" : "#64748b"); cursor:pointer; font-weight:bold;">
+                            @(k.Id == ViewBag.Kaynaklar.AktifId ? "✅ " : "")@k.Ad
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- YOLCU KARTLARI -->
+    <div class="kart-grid">
+        <div class="kart">
+            <h3>ANLIK YOLCU</h3>
+            <div class="sayi" id="anlik-sayi" style="color:#2563eb;">--</div>
+            <div class="alt" id="son-guncelleme">Bekleniyor...</div>
+        </div>
+        <div class="kart">
+            <h3>HAREKETLİ ORTALAMA</h3>
+            <div class="sayi" id="ortalama-sayi" style="color:#16a34a;">--</div>
+            <div class="alt">Son 20 ölçüm</div>
+        </div>
+        <div class="kart">
+            <h3>TOPLAM OTURUM</h3>
+            <div class="sayi" style="color:#9333ea;">@(Model?.ToplamOturum ?? 0)</div>
+            <div class="alt">Kayıtlı çalışma</div>
+        </div>
+    </div>
+
+    <!-- GRAFİK -->
+    <div class="panel">
+        <h3>📈 Yolcu Sayısı Grafiği</h3>
+        <canvas id="yolcuGrafik" height="70"></canvas>
+    </div>
+
+    <!-- GEÇMİŞ OTURUMLAR -->
+    <div class="panel">
+        <h3>📋 Geçmiş Oturumlar</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Başlangıç</th>
+                    <th>Bitiş</th>
+                    <th>Video Kaynağı</th>
+                    <th>Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model?.Oturumlar != null)
+                {
+                    @foreach (var o in Model.Oturumlar)
+                    {
+                        <tr>
+                            <td>#@o.Id</td>
+                            <td>@o.Baslangic.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@(o.Bitis?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
+                            <td>@o.VideoKaynak</td>
+                            <td>
+                                @if (o.Bitis == null)
+                                {
+                                    <span class="badge badge-aktif">🟢 Aktif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-bitti">Tamamlandı</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // ==================== GRAFİK ====================
+        const ctx = document.getElementById('yolcuGrafik').getContext('2d');
+        const grafik = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Anlık Yolcu',
+                    data: [],
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37,99,235,0.06)',
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                animation: false,
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+
+        async function grafikDoldur() {
+            const res = await fetch('/Dashboard/GecmisVeri?limit=50');
+            const data = await res.json();
+            if (data?.veriler) {
+                const veriler = [...data.veriler].reverse();
+                grafik.data.labels = veriler.map(v => v.zaman.substring(11, 19));
+                grafik.data.datasets[0].data = veriler.map(v => v.anlikKisi);
+                grafik.update();
+            }
+        }
+
+        // ==================== YOLCU ====================
+        async function canliGuncelle() {
+            try {
+                const res = await fetch('/Dashboard/AnlikVeri');
+                const data = await res.json();
+                if (data) {
+                    document.getElementById('anlik-sayi').textContent = data.anlikKisi ?? '--';
+                    document.getElementById('ortalama-sayi').textContent =
+                        data.ortalama != null ? data.ortalama.toFixed(1) : '--';
+                    document.getElementById('son-guncelleme').textContent = 'Son: ' + data.zaman;
+
+                    const simdi = new Date().toLocaleTimeString('tr-TR');
+                    grafik.data.labels.push(simdi);
+                    grafik.data.datasets[0].data.push(data.anlikKisi);
+
+                    if (grafik.data.labels.length > 60) {
+                        grafik.data.labels.shift();
+                        grafik.data.datasets[0].data.shift();
+                    }
+                    grafik.update();
+                }
+            } catch (e) {
+                document.getElementById('anlik-sayi').textContent = '?';
+            }
+        }
+
+        // ==================== SÜRÜCÜ ====================
+        async function surucuGuncelle() {
+            try {
+                const res = await fetch('/Dashboard/SurucuCanliVeri');
+                const data = await res.json();
+
+                if (data && data.uyariSeviyesi) {
+                    const seviyeEl = document.getElementById('surucu-seviye');
+                    const mesajEl  = document.getElementById('surucu-mesaj');
+                    const kartEl   = document.getElementById('surucu-durum-kart');
+
+                    document.getElementById('surucu-ear').textContent = data.ear.toFixed(2);
+                    document.getElementById('surucu-mar').textContent = data.mar.toFixed(2);
+
+                    if (!data.yuzTespit) {
+                        seviyeEl.textContent = "YÜZ YOK";
+                        seviyeEl.style.color = "#94a3b8";
+                        kartEl.style.border = "2px solid #e2e8f0";
+                        mesajEl.textContent = "Kamera sürücüyü göremiyor";
+                    } else if (data.uyariSeviyesi === "kritik") {
+                        seviyeEl.textContent = "KRİTİK";
+                        seviyeEl.style.color = "#dc2626";
+                        kartEl.style.border = "2px solid #dc2626";
+                        mesajEl.textContent = data.uyariMesaji || "Uyuklama veya baş düşmesi!";
+                    } else if (data.uyariSeviyesi === "dikkat") {
+                        seviyeEl.textContent = "DİKKAT";
+                        seviyeEl.style.color = "#eab308";
+                        kartEl.style.border = "2px solid #eab308";
+                        mesajEl.textContent = data.uyariMesaji || "Esneme veya yorgunluk";
+                    } else {
+                        seviyeEl.textContent = "NORMAL";
+                        seviyeEl.style.color = "#16a34a";
+                        kartEl.style.border = "2px solid transparent";
+                        mesajEl.textContent = "Sürücü aktif ve dikkatli";
+                    }
+                }
+            } catch (e) {
+                console.error("Sürücü verisi çekilemedi:", e);
+            }
+        }
+
+        // ==================== YANGIN CANLI ====================
+        async function yanginGuncelle() {
+            try {
+                const res = await fetch('/Dashboard/YanginCanliVeri');
+                const data = await res.json();
+
+                const durumEl   = document.getElementById('yangin-durum');
+                const panelEl   = document.getElementById('yangin-panel');
+                const alarmEl   = document.getElementById('yangin-alarm');
+                const alarmKart = document.getElementById('yangin-alarm-kart');
+
+                document.getElementById('yangin-skor').textContent =
+                    data.skor > 0 ? '%' + Math.round(data.skor * 100) : '--';
+                document.getElementById('yangin-kutu').textContent = data.kutuSayisi ?? 0;
+                document.getElementById('yangin-zaman').textContent =
+                    data.zaman ? data.zaman.substring(11, 19) : '';
+
+                if (data.alarm) {
+                    durumEl.textContent = '!! ALARM !!';
+                    durumEl.style.color = '#dc2626';
+                    panelEl.style.border = '2px solid #dc2626';
+                    alarmEl.textContent = 'AKTİF';
+                    alarmEl.style.color = '#dc2626';
+                    alarmKart.style.background = '#fef2f2';
+                } else if (data.yanginVar) {
+                    durumEl.textContent = 'DİKKAT';
+                    durumEl.style.color = '#ea580c';
+                    panelEl.style.border = '2px solid #ea580c';
+                    alarmEl.textContent = 'PASİF';
+                    alarmEl.style.color = '#16a34a';
+                    alarmKart.style.background = 'white';
+                } else {
+                    durumEl.textContent = 'NORMAL';
+                    durumEl.style.color = '#16a34a';
+                    panelEl.style.border = '2px solid transparent';
+                    alarmEl.textContent = 'PASİF';
+                    alarmEl.style.color = '#16a34a';
+                    alarmKart.style.background = 'white';
+                }
+            } catch (e) {
+                console.error("Yangın verisi çekilemedi:", e);
+            }
+        }
+
+        // ==================== YANGIN GEÇMİŞ ====================
+        async function yanginKayitlariGuncelle() {
+            try {
+                const res = await fetch('/Dashboard/YanginGecmis?limit=20');
+                const data = await res.json();
+                const tbody = document.getElementById('yangin-tablo-body');
+
+                if (!data.veriler || data.veriler.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Henüz kayıt yok</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.veriler.map(v => `
+                    <tr>
+                        <td>${v.zaman ? v.zaman.substring(0, 19).replace('T', ' ') : '-'}</td>
+                        <td>${v.kameraId}</td>
+                        <td>%${Math.round(v.skor * 100)}</td>
+                        <td>${v.kutuSayisi}</td>
+                        <td>
+                            <span class="badge ${v.alarm ? '' : 'badge-bitti'}"
+                                  style="${v.alarm ? 'background:#fee2e2; color:#dc2626;' : ''}">
+                                ${v.alarm ? '🔴 AKTİF' : '✅ Normal'}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error("Yangın kayıtları çekilemedi:", e);
+            }
+        }
+
+        // ==================== BAŞLANGIÇ ====================
+        grafikDoldur();
+        setInterval(canliGuncelle,          1000);
+        setInterval(surucuGuncelle,          500);
+        setInterval(yanginGuncelle,         1000);
+        setInterval(yanginKayitlariGuncelle, 3000);
+        yanginKayitlariGuncelle(); // Sayfa açılınca ilk yükle
+    </script>
+</body>
+</html>
