@@ -1,12 +1,11 @@
+# database.py
 import psycopg2
 from psycopg2 import pool
 import json
-
 class DatabaseManager:
     def __init__(self, config):
         self.config = config
         self.connection_pool = None
-
     def connect(self):
         """PostgreSQL bağlantı havuzunu oluşturur"""
         try:
@@ -21,13 +20,10 @@ class DatabaseManager:
             print("✅ Veritabanı bağlantı havuzu oluşturuldu.")
         except Exception as e:
             print(f"❌ Veritabanına bağlanılamadı: {e}")
-
     def get_connection(self):
         return self.connection_pool.getconn()
-
     def return_connection(self, conn):
         self.connection_pool.putconn(conn)
-
     def anlik_kaydet(self, kamera_id, kafa_sayisi):
         """10 saniyede bir gelen anlık veriyi tabloya yazar"""
         conn = self.get_connection()
@@ -42,7 +38,6 @@ class DatabaseManager:
             print(f"⚠️ Anlık veri kaydedilemedi: {e}")
         finally:
             self.return_connection(conn)
-
     def dakikalik_kaydet(self, kamera_id, baslangic, bitis, toplam, ortalama, maks, min, fps_gercek, detaylar):
         """Dakika dolduğunda istatistikleri tabloya yazar"""
         conn = self.get_connection()
@@ -59,7 +54,24 @@ class DatabaseManager:
             print(f"⚠️ Dakikalık veri kaydedilemedi: {e}")
         finally:
             self.return_connection(conn)
-
+    # İstenen Yeni Metod:
+    def yangin_kaydet(self, kamera_id, skor, kutu_sayisi, alarm):
+        """Yangın tespiti olduğunda DB'ye kayıt atar"""
+        conn = self.get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO yangin_loglari 
+                    (kamera_id, skor, kutu_sayisi, alarm, zaman) 
+                    VALUES (%s, %s, %s, %s, NOW())""",
+                    (kamera_id, skor, kutu_sayisi, alarm)
+                )
+            conn.commit()
+        except Exception as e:
+            print(f"⚠️ Yangın verisi kaydedilemedi: {e}")
+        finally:
+            self.return_connection(conn)
+    # ------------------------------------
     def close(self):
         if self.connection_pool:
             self.connection_pool.closeall()
