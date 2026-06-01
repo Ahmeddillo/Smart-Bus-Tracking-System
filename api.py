@@ -26,7 +26,7 @@ from kafasayan2 import KafaSayaci
 # .env dosyasını yükle
 load_dotenv()
 
-# ==================== VERİTABANI AYARLARI ====================
+# VERİTABANI AYARLARI:
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Eğer .env yoksa veya boşsa otomatik olarak kodun içine yazdığın adresi al
@@ -77,6 +77,39 @@ class OturumRaporu(Base):
     maksimum_kisi = Column(Integer)
     minimum_kisi = Column(Integer)
     olusturulma = Column(DateTime, default=datetime.now)
+    
+class SurucuLogu(Base):
+    __tablename__ = "surucu_loglari"
+    id             = Column(Integer, primary_key=True)
+    oturum_id      = Column(Integer, nullable=True)
+    zaman          = Column(DateTime, default=datetime.now)
+    ear_degeri     = Column(Float)
+    mar_degeri     = Column(Float)
+    bas_mesafesi   = Column(Float)
+    goz_kapali     = Column(Integer, default=0)
+    esniyor        = Column(Integer, default=0)
+    bas_egildi     = Column(Integer, default=0)
+    uyari_seviyesi = Column(String)
+    uyari_mesaji   = Column(String)
+
+class YanginLogu(Base):
+    __tablename__ = "yangin_loglari"
+    id          = Column(Integer, primary_key=True)
+    kamera_id   = Column(String)
+    skor        = Column(Float)
+    kutu_sayisi = Column(Integer)
+    alarm       = Column(Integer, default=0)
+    zaman       = Column(DateTime, default=datetime.now)
+    
+class CukurLogu(Base):
+    __tablename__ = "cukur_loglari"
+    id          = Column(Integer, primary_key=True)
+    kamera_id   = Column(String)
+    skor        = Column(Float)
+    kutu_sayisi = Column(Integer)
+    enlem       = Column(Float)   # GPS latitude
+    boylam      = Column(Float)   # GPS longitude
+    zaman       = Column(DateTime, default=datetime.now)
 
 # Tabloları oluştur (yoksa)
 try:
@@ -85,7 +118,7 @@ try:
 except Exception as e:
     print(f"❌ Tablo oluşturma hatası: {e}")
 
-# ==================== SİSTEM BAŞLATMA ====================
+# SİSTEM BAŞLATMA:
 print("🚀 Kafa Sayacı Sistemi Başlatılıyor (Port: 5000)...")
 
 MODEL_ADI = 'medium.pt'
@@ -275,7 +308,7 @@ def gecmis_veriler(limit: int = Query(100, ge=1, le=1000)):
          description="RAM'deki son verilerin (maksimum son 360 kayıt) özeti")
 def saatlik_ozet():
     """Son 1 saatin (veya RAM'deki son kısmın) özeti"""
-    son_saat = list(son_anlik_veriler)[-360:]  # Son 360 kayıt (yaklaşık)
+    son_saat = list(son_anlik_veriler)[-360:] 
     
     if not son_saat:
         return {"mesaj": "Yeterli veri yok (en az 1 saat bekleyin)"}
@@ -333,7 +366,7 @@ def veri_aktar(
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
 
-# ==================== DB ENDPOINTLERİ ====================
+# DB ENDPOINTLERİ:
 
 @app.get("/db/gecmis",
          summary="DB - Geçmiş Veriler",
@@ -407,7 +440,219 @@ def db_oturum_raporu(oturum_id: int):
         }
     }
 
-# ==================== SİSTEM DURUMU ====================
+
+# SÜRÜCÜ TAKİP ENDPOINTLERİ: 
+
+# --- API'nin RAM'inde tutulacak boş durumlar ---
+api_surucu_durumu = {}
+api_yangin_durumu = {}
+
+@app.post("/surucu/guncelle", summary="Kamera Kodundan Canlı Veri Alır", tags=["Sürücü"])
+def surucu_veri_al(veri: dict):
+    """
+    Kamera kodun saniyede bir çalışıp verilerini buraya POST eder.
+    Böylece API kilitlenmez ve veri güncel kalır.
+    """
+    global api_surucu_durumu
+    api_surucu_durumu = veri
+    return {"mesaj": "Veri başarıyla alındı"}
+
+@app.get("/surucu/durum", summary="Sürücü Anlık Durumu", tags=["Sürücü"])
+def surucu_anlik_durum():
+    """
+    Kameradan gelen en son sürücü durumunu döndürür.
+    Frontend ve mobil uygulamalar buradan veriyi okur.
+    """
+    return api_surucu_durumu
+
+@app.get("/surucu/gecmis", summary="Sürücü Geçmiş Uyarılar", tags=["Sürücü"])
+def surucu_gecmis(limit: int = Query(50, ge=1, le=500)):
+    """
+    DB'den geçmiş dikkat/kritik uyarıları getirir.
+    """
+    try:
+        with Session(engine) as session:
+            kayitlar = session.query(SurucuLogu)\
+                .order_by(SurucuLogu.zaman.desc())\
+                .limit(limit)\
+                .all()
+        return {
+            "kayit_sayisi": len(kayitlar),
+            "veriler": [
+                {
+                    "zaman"         : k.zaman,
+                    "uyari_seviyesi": k.uyari_seviyesi,
+                    "uyari_mesaji"  : k.uyari_mesaji,
+                    "ear"           : k.ear_degeri,
+                    "mar"           : k.mar_degeri,
+                    "bas_mesafesi"  : k.bas_mesafesi,
+                    "goz_kapali"    : bool(k.goz_kapali),
+                    "esniyor"       : bool(k.esniyor),
+                    "bas_egildi"    : bool(k.bas_egildi)
+                } for k in kayitlar
+            ]
+        }
+    except Exception as e:
+        return {"hata": str(e), "veriler": []}
+
+
+@app.get("/surucu/istatistik", summary="Sürücü İstatistikleri", tags=["Sürücü"])
+def surucu_istatistik():
+    """
+    Bugünkü uyarı özeti.
+    """
+    try:
+        bugun = datetime.now().date()
+        with Session(engine) as session:
+            bugun_kayitlar = session.query(SurucuLogu)\
+                .filter(SurucuLogu.zaman >= bugun)\
+                .all()
+
+        kritik = sum(1 for k in bugun_kayitlar if k.uyari_seviyesi == "kritik")
+        dikkat = sum(1 for k in bugun_kayitlar if k.uyari_seviyesi == "dikkat")
+
+        return {
+            "bugun": str(bugun),
+            "toplam_uyari": len(bugun_kayitlar),
+            "kritik_sayisi": kritik,
+            "dikkat_sayisi": dikkat,
+        }
+    except Exception as e:
+        return {"hata": str(e)}
+
+# YANGIN TAKİP ENDPOINTLERİ:
+
+@app.post("/yangin/guncelle", summary="Yangın Kodundan Canlı Veri Alır", tags=["Yangın"])
+def yangin_veri_al(veri: dict):
+    global api_yangin_durumu
+    api_yangin_durumu = veri
+
+    # Yangın varsa DB'ye kaydet
+    if veri.get("yangin_var"):
+        try:
+            with Session(engine) as session:
+                kayit = YanginLogu(
+                    kamera_id   = veri.get("kamera_id", "kamera_1"),
+                    skor        = veri.get("skor", 0.0),
+                    kutu_sayisi = veri.get("kutu_sayisi", 0),
+                    alarm       = 1 if veri.get("alarm") else 0
+                )
+                session.add(kayit)
+                session.commit()
+        except Exception as e:
+            print(f"⚠️ Yangın DB hatası: {e}")
+
+    return {"mesaj": "Veri alındı"}
+
+@app.get("/yangin/durum", summary="Yangın Anlık Durumu", tags=["Yangın"])
+def yangin_anlik_durum():
+    return api_yangin_durumu
+
+@app.get("/yangin/gecmis", summary="Yangın Geçmiş Kayıtlar", tags=["Yangın"])
+def yangin_gecmis(limit: int = Query(50, ge=1, le=500)):
+    try:
+        with Session(engine) as session:
+            kayitlar = session.query(YanginLogu)\
+                .order_by(YanginLogu.zaman.desc())\
+                .limit(limit)\
+                .all()
+        return {
+            "kayit_sayisi": len(kayitlar),
+            "veriler": [
+                {
+                    "zaman"      : k.zaman,
+                    "kamera_id"  : k.kamera_id,
+                    "skor"       : k.skor,
+                    "kutu_sayisi": k.kutu_sayisi,
+                    "alarm"      : bool(k.alarm)
+                } for k in kayitlar
+            ]
+        }
+    except Exception as e:
+        return {"hata": str(e), "veriler": []}
+    
+@app.post("/cukur/guncelle", summary="Çukur Kamerasından Veri Alır", tags=["Çukur"])
+def cukur_veri_al(veri: dict):
+    global api_cukur_durumu
+    api_cukur_durumu = veri
+ 
+    # Sadece kayit_edildi=True olanları DB'ye yaz (tekrar kaçınmak için)
+    if veri.get("cukur_var") and veri.get("kayit_edildi"):
+        try:
+            with Session(engine) as session:
+                kayit = CukurLogu(
+                    kamera_id   = veri.get("kamera_id", "on_kamera"),
+                    skor        = veri.get("skor", 0.0),
+                    kutu_sayisi = veri.get("kutu_sayisi", 0),
+                    enlem       = veri.get("enlem"),
+                    boylam      = veri.get("boylam"),
+                )
+                session.add(kayit)
+                session.commit()
+                print(f"📍 Çukur kaydedildi: ({veri.get('enlem')}, {veri.get('boylam')})")
+        except Exception as e:
+            print(f"⚠️ Çukur DB hatası: {e}")
+ 
+    return {"mesaj": "Veri alındı"}
+ 
+ 
+@app.get("/cukur/durum", summary="Çukur Anlık Durum", tags=["Çukur"])
+def cukur_anlik_durum():
+    return api_cukur_durumu
+ 
+ 
+@app.get("/cukur/gecmis", summary="Çukur Geçmiş Kayıtlar", tags=["Çukur"])
+def cukur_gecmis(limit: int = Query(50, ge=1, le=500)):
+    try:
+        with Session(engine) as session:
+            kayitlar = session.query(CukurLogu)\
+                .order_by(CukurLogu.zaman.desc())\
+                .limit(limit)\
+                .all()
+        return {
+            "kayit_sayisi": len(kayitlar),
+            "veriler": [
+                {
+                    "zaman"      : k.zaman,
+                    "kamera_id"  : k.kamera_id,
+                    "skor"       : k.skor,
+                    "kutu_sayisi": k.kutu_sayisi,
+                    "enlem"      : k.enlem,
+                    "boylam"     : k.boylam,
+                } for k in kayitlar
+            ]
+        }
+    except Exception as e:
+        return {"hata": str(e), "veriler": []}
+ 
+ 
+@app.get("/cukur/harita", summary="Çukur Harita Verisi", tags=["Çukur"])
+def cukur_harita():
+    """
+    Dashboard haritasında nokta olarak göstermek için
+    sadece koordinat + skor döndürür.
+    """
+    try:
+        with Session(engine) as session:
+            kayitlar = session.query(CukurLogu)\
+                .filter(CukurLogu.enlem.isnot(None))\
+                .order_by(CukurLogu.zaman.desc())\
+                .limit(200)\
+                .all()
+        return {
+            "noktalar": [
+                {
+                    "enlem" : k.enlem,
+                    "boylam": k.boylam,
+                    "skor"  : k.skor,
+                    "zaman" : k.zaman,
+                } for k in kayitlar
+            ]
+        }
+    except Exception as e:
+        return {"hata": str(e), "noktalar": []}
+
+# SİSTEM DURUMU:
 @app.get("/durum")
 def sistem_durumu():
     return {
