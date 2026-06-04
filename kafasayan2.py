@@ -16,7 +16,7 @@ class KafaSayaci:
         
         self.video_dosyasi = video_dosyasi
         
-        # --- RTSP / CANLI YAYIN KONTROLÜ ---
+        # --- Yayın Kontrolü ---
         self.canli_yayin = False
         # Eğer girdi sayıysa (Webcam 0) veya 'rtsp/http' içeriyorsa canlıdır
         if isinstance(video_dosyasi, int) or str(video_dosyasi).lower().startswith(('rtsp', 'http', 'https')):
@@ -45,7 +45,7 @@ class KafaSayaci:
         self.display_width = 1280
         self.display_height = int(self.display_width * self.height / self.width) if self.width > 0 else 720
         
-        # --- DEĞİŞKENLER ---
+        # --- Değişkenler ---
         self.guncel_kare = None          
         self.output_frame = None         
         self.son_kutular = []            
@@ -54,7 +54,7 @@ class KafaSayaci:
         self.yolo_ortalama = 0.0
         self.son_sayilar = deque(maxlen=20)
         
-        # --- İSTATİSTİK (RAM) ---
+        # --- İstatistik (RAM) ---
         self.gecmis_veriler = [] 
         
         self.program_calisiyor = True
@@ -215,9 +215,9 @@ class KafaSayaci:
         time.sleep(0.5)
         if self.cap.isOpened(): self.cap.release()
 
-# ==========================================
+# -----------------------------------------------------------
 # MAIN: TEK BAŞINA ÇALIŞTIRMA BLOĞU
-# ==========================================
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Kafa Sayacı Test Modu")
     parser.add_argument('--video', type=str, default='ornek.mp4', help="Video dosya yolu veya RTSP linki")
