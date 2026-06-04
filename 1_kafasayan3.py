@@ -1,4 +1,4 @@
-#kafasayan3.py   -- 12/05/2026
+#kafasayan3.py
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -142,7 +142,7 @@ class KafaSayaci:
             if not self.cap.isOpened():
                 if self.canli_yayin:
                     # Canlı yayında bağlantı koptuysa serbest bırak ve 2 saniye sonra tekrar dene
-                    print("⚠️ Bağlantı koptu, tekrar deneniyor...")
+                    print("Bağlantı koptu, tekrar deneniyor...")
                     self.cap.release()
                     time.sleep(2)
                     self.cap = cv2.VideoCapture(self.video_dosyasi)
@@ -157,7 +157,7 @@ class KafaSayaci:
             if not ret:
                 if self.canli_yayin:
                     # Canlı yayında kare gelmiyorsa akışı serbest bırakıp döngüye devam et
-                    print("⚠️ Yayın akışı durdu, yeniden bağlanılıyor...")
+                    print("Yayın akışı durdu, yeniden bağlanılıyor...")
                     self.cap.release()
                     continue 
                 else:
@@ -246,9 +246,9 @@ class KafaSayaci:
         if self.cap.isOpened(): 
             self.cap.release()
 
-# ==========================================
+# ---------------------------------------------
 # MAIN: TEK BAŞINA ÇALIŞTIRMA BLOĞU
-# ==========================================
+
 # Script doğrudan çalıştırıldığında (import edilmediğinde) devreye girer
 # Aşağıda bulunan main kısmında argument kısmı bulunmaktadır, varsayılan değerleri atamak ve kullanıcının istersen farklı model veya kaynak
 # kullanması için ona yol açar
