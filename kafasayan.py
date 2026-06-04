@@ -1,4 +1,4 @@
-# kafa_sayaci_video_threaded.py
+# kafasayan.py
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -36,7 +36,7 @@ class KafaSayaci:
         self.display_width = min(self.width, 1280)
         self.display_height = int(self.display_width * self.height / self.width)
         
-        # --- THREADING DEĞİŞKENLERİ ---
+        # --- Threading Değişkenleri ---
         self.guncel_kare = None         
         self.yolo_sonuc_karesi = None   
         self.yolo_anlik_kisi = 0
