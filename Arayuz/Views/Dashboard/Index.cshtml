@@ -204,6 +204,8 @@
         </table>
     </div>
 
+    <!-- Diğer Yarım: -->
+
     <!-- KAYNAK SEÇİCİ -->
     @if (ViewBag.Kaynaklar != null)
     {
@@ -356,7 +358,7 @@
                 const res = await fetch('/Dashboard/SurucuCanliVeri');
                 const data = await res.json();
 
-                if (data && data.uyariSeviyesi) {
+                if (data) {
                     const seviyeEl = document.getElementById('surucu-seviye');
                     const mesajEl  = document.getElementById('surucu-mesaj');
                     const kartEl   = document.getElementById('surucu-durum-kart');
