@@ -1,4 +1,4 @@
-# 2_yorgunluk_tespiti_parlakortam2.py  --  12/05/2026
+# 2_yorgunluk_tespiti_parlakortam2.py
 
 import cv2
 import dlib
@@ -11,7 +11,7 @@ import threading
 import os
 from collections import deque
 
-# --- VERİTABANI ---
+# Veritabanı kısmı:
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Boolean, text
 from sqlalchemy.orm import declarative_base, Session
 from dotenv import load_dotenv
@@ -36,7 +36,7 @@ except Exception as e:
     Base = declarative_base()
 
 # 3) Önceden oluşturulan veri tabanında tablo oluşturuluyor:
-# --- TABLO ---
+# Tablo:
 class SurucuLogu(Base):
     __tablename__ = "surucu_loglari"
     id             = Column(Integer, primary_key=True)
@@ -57,7 +57,8 @@ try:
 except Exception as e:
     print(f"❌ Tablo hatasi: {e}")
 
-# ===================== MODEL VE AYARLAR =====================
+# --------------------------------------------------
+# Ayarlar
 # 4) Önce Dlib modeli yüklenir
 print("🔄 Dlib modeli yukleniyor...")
 detector = dlib.get_frontal_face_detector()
@@ -105,7 +106,8 @@ son_durum_lock = threading.Lock()
 # DB kayıt kuyruğu (ana thread'i yavaşlatmamak için)
 db_kuyruk = deque(maxlen=200)
 
-# ===================== FONKSİYONLAR =====================
+# --------------------------------------------------
+# Fonksiyonlar:
 # 10) Parlak ortamların hazırlanması için özel fonksiyonlar oluşturulur:
 # ayrıca eşik değerlerini hesaplamak için de başka fonksiyonlar oluşturulur
 def improve_light(image):
