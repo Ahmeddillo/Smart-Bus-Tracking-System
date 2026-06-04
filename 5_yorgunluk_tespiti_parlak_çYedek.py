@@ -1,9 +1,14 @@
+# 5_yorgunluk_tespiti_parlak_çYedek.py
+
 import cv2
 import dlib
 import numpy as np
 from imutils import face_utils
 import winsound
 import datetime
+import requests
+import time
+son_api_gonderi = 0
 
 # 1. Modeller
 detector = dlib.get_frontal_face_detector()
@@ -111,6 +116,42 @@ while True:
         cv2.rectangle(frame, (0, 440), (640, 480), (50, 50, 50), -1)
         info = f"EAR: {ear:.2f} | MAR: {mar:.2f} | DIST: {nose_chin_dist:.0f}"
         cv2.putText(frame, info, (10, 465), 1, 1, (255, 255, 255), 1)
+        
+        # API'ye gönder (her 1 saniyede bir)
+        simdi = time.time()
+        if simdi - son_api_gonderi >= 1:
+            uyari_seviyesi = "normal"
+            uyari_mesaji   = ""
+            goz_kapali     = ear < EYE_AR_THRESH
+            bas_egildi     = nose_chin_dist < HEAD_DIST_THRESH
+            esniyor        = mar > MOUTH_AR_THRESH
+        
+            if COUNTER >= EYE_AR_CONSEC_FRAMES:
+                uyari_seviyesi = "kritik"
+                uyari_mesaji   = "Uyuklama tespiti!"
+            elif esniyor:
+                uyari_seviyesi = "dikkat"
+                uyari_mesaji   = "Esneme tespiti"
+            elif goz_kapali:
+                uyari_seviyesi = "dikkat"
+                uyari_mesaji   = "Gözler kapanıyor"
+        
+            try:
+                requests.post("http://localhost:5000/surucu/guncelle", json={
+                    "ear"            : round(float(ear), 3),
+                    "mar"            : round(float(mar), 3),
+                    "bas_mesafesi"   : round(float(nose_chin_dist), 1),
+                    "goz_kapali"     : bool(goz_kapali),
+                    "esniyor"        : bool(esniyor),
+                    "bas_egildi"     : bool(bas_egildi),
+                    "uyari_seviyesi" : uyari_seviyesi,
+                    "uyari_mesaji"   : uyari_mesaji,
+                    "yuz_tespit"     : True,
+                    "zaman"          : datetime.datetime.now().isoformat()
+                }, timeout=1)
+                son_api_gonderi = simdi
+            except Exception:
+                pass
 
     cv2.imshow("Driver Safety System v2.0", frame)
     if cv2.waitKey(1) & 0xFF == ord("q"): break
