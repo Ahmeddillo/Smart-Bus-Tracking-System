@@ -28,10 +28,6 @@ analiz_aktif = True
 
 # ---- YENİ EKLENEN FİLTRE: RENK KONTROLÜ (HSV) ----
 def yangin_rengi_var_mi(bgr_parca, esik=0.12):
-    """
-    Parçada yangın rengi (turuncu/kırmızı/sarı) var mı?
-    esik: Piksellerin kaçının yangın renginde olması gerektiği (0.12 = %12)
-    """
     hsv = cv2.cvtColor(bgr_parca, cv2.COLOR_BGR2HSV)
     
     # Farklı tonlar için maskeler tanımlanmıştır, sonra da toplam maske tüm maskeleri OR operatörü ile toplanması sağlanmıştır
@@ -51,7 +47,7 @@ def yangin_rengi_var_mi(bgr_parca, esik=0.12):
     return oran > esik
 
 
-# ---- ARKA PLAN İŞÇİSİ (YAPAY ZEKA MOTORU) ----
+# ---- Yapay Zeka Motoru ----
 # Sistemin beyni halindedir
 # Sürekli çalışan bir döngü içinde kameradan gelen görüntüyü alır, 
 # parçalara böler ve her parçada "Yangın var mı?"
@@ -125,9 +121,9 @@ def analiz_motoru():
 ai_thread = threading.Thread(target=analiz_motoru, daemon=True)
 ai_thread.start()
 
-# ==========================================================
+# --------------------------------------------------
 # ANA KAMERA DONGUSU
-# ==========================================================
+
 # bilgisayarın kamerası açılır:
 cap = cv2.VideoCapture(0)
 
