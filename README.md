@@ -1,6 +1,6 @@
 # 🚌 Akıllı Otobüs Takip Sistemi
 
-<img width="1256" height="644" alt="Ekran görüntüsü 2026-06-04 115446" src="https://github.com/user-attachments/assets/af6e352f-6f2d-4bd9-a984-a4ae80ea2792" />
+<img width="1244" height="628" alt="Ekran görüntüsü 2026-06-04 210501" src="https://github.com/user-attachments/assets/849d4cf8-11a5-4838-bbf4-f67438c41fa6" />
 
 Otobüslerde yapay zeka destekli güvenlik ve izleme sistemi. Yolcu sayımı, sürücü yorgunluk tespiti, yangın algılama ve çukur tespiti modüllerinden oluşan entegre bir platform.
 
