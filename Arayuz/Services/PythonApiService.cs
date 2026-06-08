@@ -17,7 +17,7 @@ namespace OtobusDashboard.Services
                 PropertyNameCaseInsensitive = true
             };
         }
-        // --- YOLCU API ÇAĞRILARI (Mevcut) ---
+        // Yolcu API Çağrıları:
         public async Task<KaynakResponse?> GetKaynaklarAsync()
         {
             try
@@ -64,8 +64,7 @@ namespace OtobusDashboard.Services
             catch { return null; }
         }
         // ==========================================================
-        // --- YENİ EKLENEN SÜRÜCÜ API ÇAĞRILARI ---
-        // ==========================================================
+        // Sürücü API Çağrıları:
         public async Task<SurucuAnlikVeri?> GetSurucuAnlikVeriAsync()
         {
             try
