@@ -92,8 +92,7 @@ namespace OtobusDashboard.Models
     }
 
     // ==========================================================
-    // --- YENİ EKLENEN SÜRÜCÜ MODELLERİ ---
-    // ==========================================================
+    // Sürücü Modülleri:
     public class SurucuAnlikVeri
     {
         [JsonPropertyName("ear")]
@@ -127,6 +126,8 @@ namespace OtobusDashboard.Models
         public int DikkatSayisi { get; set; }
     }
 
+    // ==========================================================
+    // Yangın Modülleri:
 
     public class YanginAnlikVeri
     {
