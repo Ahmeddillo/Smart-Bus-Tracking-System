@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace OtobusDashboard.Models
 {
-    // --- YOLCU MODELLERİ (Eskiler aynı duruyor) ---
+    // --- YOLCU MODELLERİ ---
     public class AnlikVeri
     {
         [JsonPropertyName("anlik_kisi")]
