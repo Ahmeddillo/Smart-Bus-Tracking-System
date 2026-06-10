@@ -22,7 +22,7 @@ namespace OtobusDashboard.Controllers
             var oturumlar = await _api.GetOturumlarAsync();
             var kaynaklar = await _api.GetKaynaklarAsync();
 
-            // YENİ: Sürücünün günlük ihlal tablosu
+            // Sürücünün günlük ihlal tablosu
             var surucuIstatistik = await _api.GetSurucuIstatistikAsync();
 
             ViewBag.Kaynaklar = kaynaklar;
@@ -66,9 +66,7 @@ namespace OtobusDashboard.Controllers
             });
         }
 
-        // ==========================================================
-        // --- YENİ EKLENEN SÜRÜCÜ JS ENDPOINTİ ---
-        // ==========================================================
+        // --- Sürücü endpointları ---
         [HttpGet]
         public async Task<IActionResult> SurucuCanliVeri()
         {
