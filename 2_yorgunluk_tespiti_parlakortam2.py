@@ -10,6 +10,7 @@ import time
 import threading
 import os
 from collections import deque
+import requests
 
 # Veritabanı kısmı:
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Boolean, text
@@ -151,6 +152,26 @@ def db_kayit_thread():
 db_thread = threading.Thread(target=db_kayit_thread, daemon=True)
 db_thread.start()
 
+def api_gonder_thread():
+    """RAM'deki son durumu belirli aralıklarla API'ye post eder."""
+    api_url = "http://127.0.0.1:5000/surucu/guncelle" # API adresi
+    while True:
+        with son_durum_lock:
+            # RAM'deki güncel veriyi kopyala
+            veri = son_durum.copy() 
+        
+        try:
+            # API'ye POST isteği at
+            response = requests.post(api_url, json=veri, timeout=1)
+        except Exception as e:
+            print(f"⚠️ API'ye veri gönderilemedi: {e}")
+            
+        time.sleep(1) # Her 1 saniyede bir gönder (isteğe göre değiştirilebilir)
+
+# Thread'i başlat
+api_thread = threading.Thread(target=api_gonder_thread, daemon=True)
+api_thread.start()
+
 # Log dosyası
 log_file = "driver_logs.txt"
 with open(log_file, "a") as f:
@@ -273,10 +294,13 @@ while True:
             son_durum.update({
                 "ear"           : round(float(ear), 3),
                 "mar"           : round(float(mar), 3),
-                "bas_mesafesi"  : round(nose_chin_dist, 1),
-                "goz_kapali"    : COUNTER >= EYE_AR_CONSEC_FRAMES,
-                "esniyor"       : esniyor_mi,
-                "bas_egildi"    : bas_egildi_mi,
+                "bas_mesafesi"  : round(float(nose_chin_dist), 1), # float() ile sağlama alalım
+                
+                # NumPy bool_ nesnelerini saf Python bool tipine çeviriyoruz:
+                "goz_kapali"    : bool(COUNTER >= EYE_AR_CONSEC_FRAMES),
+                "esniyor"       : bool(esniyor_mi),
+                "bas_egildi"    : bool(bas_egildi_mi),
+                
                 "uyari_seviyesi": uyari_seviyesi,
                 "uyari_mesaji"  : uyari_mesaji,
                 "kalibrasyon"   : False,
