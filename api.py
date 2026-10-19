@@ -32,7 +32,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 # Eğer .env yoksa veya boşsa otomatik olarak kodun içine yazdığın adresi al
 if not DATABASE_URL:
     # BURAYA KENDİ DB BİLGİLERİNİ YAZIYORSUN
-    DATABASE_URL = "."
+    DATABASE_URL = "****************"
 
 print(f"🔗 Bağlanılacak Adres: {DATABASE_URL}")
 
